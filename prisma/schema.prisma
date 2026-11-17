@@ -1,0 +1,73 @@
+// ScholarSync — Prisma schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  name        String
+  role        String   // ADMIN | STUDENT | TEACHER
+  // Teacher-only profile fields
+  subject     String?
+  phone       String?
+  officeHours String?
+  bio         String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  scholarships    Scholarship[]
+  sentMessages    Message[]              @relation("MessageFrom")
+  receivedMessages Message[]             @relation("MessageTo")
+  statusTracking  UserScholarshipStatus[]
+}
+
+model Scholarship {
+  id             String   @id @default(cuid())
+  title          String
+  provider       String
+  country        String
+  degreeLevel    String
+  fundingType    String
+  deadline       String
+  applicationUrl String
+  description    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdById    String
+  createdBy      User     @relation(fields: [createdById], references: [id])
+  userStatuses   UserScholarshipStatus[]
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  fromUserId  String
+  toUserId    String
+  subject     String
+  content     String
+  messageType String   // QUERY | RECOMMENDATION_REQUEST
+  status      String   // SENT | READ
+  createdAt   DateTime @default(now())
+  fromUser    User     @relation("MessageFrom", fields: [fromUserId], references: [id])
+  toUser      User     @relation("MessageTo", fields: [toUserId], references: [id])
+}
+
+model UserScholarshipStatus {
+  id            String   @id @default(cuid())
+  userId        String
+  scholarshipId String
+  status        String   // INTERESTED | SAVED | APPLIED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User        @relation(fields: [userId], references: [id])
+  scholarship   Scholarship @relation(fields: [scholarshipId], references: [id])
+
+  @@unique([userId, scholarshipId])
+}
